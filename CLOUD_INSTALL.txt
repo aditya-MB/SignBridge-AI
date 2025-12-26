@@ -24,23 +24,17 @@ $ npm -v
 --------------------------------------------------------------------------------
 $ mkdir signbridge-ai && cd signbridge-ai
 
-(Copy your project files into this directory using SCP or Git)
-$ nano App.tsx
-$ nano components/Avatar.tsx
-... (etc)
+(Copy ALL your project files into this directory. Ensure components/ and 
+services/ folders exist and contain their respective files.)
 
 4. INSTALL DEPENDENCIES
 --------------------------------------------------------------------------------
-Ensure you have the package.json file created (see below).
 $ npm install
 
 5. CONFIGURE API KEY
 --------------------------------------------------------------------------------
-The application requires your Gemini API Key. Create a .env file:
 $ nano .env
-
-Add the following line (replace with your actual key):
-API_KEY=your_gemini_api_key_here
+Add: API_KEY=your_gemini_api_key_here
 
 6. RUNNING THE APPLICATION
 --------------------------------------------------------------------------------
@@ -52,20 +46,25 @@ $ npm run build
 $ sudo npm install -g serve
 $ sudo serve -s dist -l 80
 
-7. FIREWALL CONFIGURATION (IMPORTANT)
+7. CRITICAL: SSL / HTTPS REQUIREMENT
 --------------------------------------------------------------------------------
-Ensure your Cloud Provider's Security Group allows traffic on the required port:
-- For 'serve': Allow TCP port 80 (HTTP)
-- For 'dev': Allow TCP port 5173
+Most browsers (Chrome, Safari, Firefox) BLOCK access to Microphone and Camera
+on non-secure (HTTP) origins unless they are 'localhost'.
 
-If using UFW on the instance:
+If you are accessing your cloud instance via an IP address or a domain:
+- You MUST use HTTPS.
+- Use a tool like 'Certbot' with Nginx/Apache, OR use 'Cloudflare Tunnel'.
+- Quick Test Workaround: In Chrome, go to:
+  chrome://flags/#unsafely-treat-insecure-origin-as-secure
+  and add 'http://your-instance-ip:5173' to the list to test.
+
+8. FIREWALL CONFIGURATION
+--------------------------------------------------------------------------------
+Ensure your Cloud Provider's Security Group allows traffic:
+- Port 80 (HTTP) or 443 (HTTPS)
+- Port 5173 (if running dev server)
+
 $ sudo ufw allow 80/tcp
 $ sudo ufw allow 5173/tcp
-
-8. RE-KEY SELECTION (If using Veo/Pro features)
---------------------------------------------------------------------------------
-If the app uses window.aistudio.openSelectKey(), ensure you are accessing
-the site via HTTPS, as many browser APIs (camera, mic, and some key dialogs) 
-require a secure context.
 
 ================================================================================
