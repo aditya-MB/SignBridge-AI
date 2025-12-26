@@ -1,0 +1,8 @@
+{
+  "name": "SignBridge AI",
+  "description": "A real-time communication tool bridging the gap between sign language and spoken speech using Gemini AI, featuring an animated avatar and live transcription.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
