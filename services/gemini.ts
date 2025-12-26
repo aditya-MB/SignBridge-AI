@@ -1,12 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse, Modality } from "@google/genai";
 
-const API_KEY = process.env.API_KEY || '';
-
-export const getGeminiInstance = () => {
-  return new GoogleGenAI({ apiKey: API_KEY });
-};
-
 /**
  * Cleans the model output by removing markdown code blocks, 
  * JSON artifacts, and excessive whitespace.
@@ -28,8 +22,9 @@ const cleanModelOutput = (text: string): string => {
   return cleaned;
 };
 
+// Fix: Always use the required initialization pattern inside each service call
 export const translateSignToText = async (base64Image: string): Promise<string> => {
-  const ai = getGeminiInstance();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -48,6 +43,7 @@ export const translateSignToText = async (base64Image: string): Promise<string> 
       },
     });
     
+    // Fix: Access response text as a property, not a method
     const rawText = response.text || "";
     const cleaned = cleanModelOutput(rawText);
     
@@ -63,8 +59,9 @@ export const translateSignToText = async (base64Image: string): Promise<string> 
   }
 };
 
+// Fix: Always use the required initialization pattern inside each service call
 export const generateSpeechFromText = async (text: string) => {
-  const ai = getGeminiInstance();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
@@ -85,29 +82,49 @@ export const generateSpeechFromText = async (text: string) => {
   }
 };
 
+/**
+ * Standard manual decode function as per Gemini API guidelines.
+ */
+export function decode(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * Standard audio decoding helper for raw PCM data as per Gemini API guidelines.
+ */
 export const decodeAudioData = async (
   base64: string,
   ctx: AudioContext,
-  sampleRate: number = 24000
+  sampleRate: number = 24000,
+  numChannels: number = 1
 ): Promise<AudioBuffer> => {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  
-  const dataInt16 = new Int16Array(bytes.buffer);
-  const buffer = ctx.createBuffer(1, dataInt16.length, sampleRate);
-  const channelData = buffer.getChannelData(0);
-  for (let i = 0; i < dataInt16.length; i++) {
-    channelData[i] = dataInt16[i] / 32768.0;
+  const data = decode(base64);
+  const dataInt16 = new Int16Array(data.buffer);
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
   }
   return buffer;
 };
 
+/**
+ * Standard manual encode function as per Gemini API guidelines.
+ */
 export const encodeAudio = (bytes: Uint8Array): string => {
   let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
